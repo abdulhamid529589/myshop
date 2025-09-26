@@ -1,0 +1,15 @@
+@import url("https://fonts.googleapis.com/css2?family=Prata&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.active hr {
+  display: block;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  font-family: "Prata", serif;
+}
