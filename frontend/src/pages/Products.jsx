@@ -2,6 +2,8 @@ import React, { useContext, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 import RelatedProducts from "../components/RelatedProducts";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Products = () => {
   const { productId } = useParams();
@@ -17,13 +19,24 @@ const Products = () => {
     if (foundProduct) {
       setProductData(foundProduct);
       setActiveImage(foundProduct.image?.[0]);
-      if (foundProduct.sizes?.length > 0)
-        setSelectedSize(foundProduct.sizes[0]);
+      setSelectedSize(""); // User must select size, no default
     }
   }, [productId, products]);
 
   // Handle add to cart
   const handleAddToCart = () => {
+    if (productData.sizes?.length > 0 && !selectedSize) {
+      toast.error("Please select a product size before adding to cart.", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "colored",
+      });
+      return;
+    }
+
     const productWithOptions = { ...productData, selectedSize };
     addToCart(productWithOptions);
     navigate("/cart");
@@ -39,6 +52,9 @@ const Products = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-8 flex flex-col gap-12">
+      {/* Toast Container */}
+      <ToastContainer />
+
       {/* Product Details Section */}
       <div className="flex flex-col md:flex-row gap-10">
         {/* Left Column: Product Images */}

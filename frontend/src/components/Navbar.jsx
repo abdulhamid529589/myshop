@@ -5,7 +5,7 @@ import { Menu, X } from "lucide-react";
 import { ShopContext } from "../context/ShopContext";
 
 const Navbar = () => {
-  const { products } = useContext(ShopContext);
+  const { products, cartItems } = useContext(ShopContext);
   const [menuOpen, setMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -13,7 +13,10 @@ const Navbar = () => {
   const navigate = useNavigate();
   const profileRef = useRef(null);
 
-  const cartItemCount = 10; // Example; replace with dynamic count
+  const cartItemCount = cartItems.reduce(
+    (acc, item) => acc + (item.quantity || 1),
+    0
+  );
 
   const navItems = [
     { name: "HOME", path: "/" },
@@ -22,9 +25,13 @@ const Navbar = () => {
     { name: "CONTACT", path: "/contact" },
   ];
 
-  const profileItems = ["My Profile", "Orders", "Logout"];
+  const profileItems = [
+    { name: "My Profile", path: "/profile" },
+    { name: "Orders", path: "/orders" }, // ✅ will navigate to Orders page
+    { name: "Logout", path: "/logout" },
+  ];
 
-  // Close profile menu on outside click
+  // Close profile dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (profileRef.current && !profileRef.current.contains(e.target)) {
@@ -35,7 +42,7 @@ const Navbar = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // -------- Search Handling --------
+  // ---- Search Handlers ----
   const handleSearchChange = (e) => {
     const value = e.target?.value || "";
     setSearchTerm(value);
@@ -44,7 +51,7 @@ const Navbar = () => {
       const filtered = products.filter((p) =>
         p.name.toLowerCase().includes(value.toLowerCase())
       );
-      setSuggestions(filtered.slice(0, 5));
+      setSuggestions(filtered.slice(0, 10));
     } else {
       setSuggestions([]);
     }
@@ -54,7 +61,9 @@ const Navbar = () => {
     navigate(
       `/collection?category=${encodeURIComponent(
         product.category
-      )}&subCategory=${encodeURIComponent(product.subCategory)}`
+      )}&subCategory=${encodeURIComponent(
+        product.subCategory
+      )}&productId=${encodeURIComponent(product._id)}`
     );
     setSearchTerm("");
     setSuggestions([]);
@@ -67,7 +76,7 @@ const Navbar = () => {
     }
   };
 
-  // -------- Render Helpers --------
+  // ---- Render Helpers ----
   const renderNavLinks = (isMobile = false) =>
     navItems.map((item) => (
       <NavLink
@@ -87,6 +96,8 @@ const Navbar = () => {
   const renderProfile = () => (
     <div className="relative" ref={profileRef}>
       <button
+        aria-haspopup="menu"
+        aria-expanded={profileOpen}
         className="w-6 h-6 sm:w-5 sm:h-5 cursor-pointer hover:scale-110 transition-transform duration-300 focus:outline-none"
         onClick={() => setProfileOpen((prev) => !prev)}
       >
@@ -101,10 +112,14 @@ const Navbar = () => {
         <ul className="absolute right-0 mt-2 w-40 py-2 bg-white rounded-xl shadow-lg border z-50">
           {profileItems.map((item) => (
             <li
-              key={item}
+              key={item.name}
+              onClick={() => {
+                navigate(item.path);
+                setProfileOpen(false);
+              }}
               className="px-4 py-2 text-gray-700 text-sm hover:text-purple-600 hover:bg-purple-50 cursor-pointer transition-all duration-300"
             >
-              {item}
+              {item.name}
             </li>
           ))}
         </ul>

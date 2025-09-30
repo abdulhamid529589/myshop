@@ -1,61 +1,26 @@
-import React, { useState, useEffect, useContext } from "react";
+import React, { useState, useEffect, useMemo, useContext } from "react";
 import { ShopContext } from "../context/ShopContext";
-import { useLocation, useNavigate } from "react-router-dom";
+import { products as allProducts } from "../assets/frontend_assets/assets";
+import { useNavigate, useLocation } from "react-router-dom";
+import { toast } from "react-toastify";
+
+const useQuery = () => new URLSearchParams(useLocation().search);
 
 const Collection = () => {
-  const { products, addToCart } = useContext(ShopContext);
+  const { addToCart, currency } = useContext(ShopContext);
   const navigate = useNavigate();
-  const location = useLocation();
+  const query = useQuery();
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState([]);
-  const [selectedTypes, setSelectedTypes] = useState([]);
+  // States
+  const [searchTerm, setSearchTerm] = useState(query.get("search") || "");
+  const [selectedCategories, setSelectedCategories] = useState(
+    query.get("category") ? [query.get("category")] : []
+  );
+  const [selectedTypes, setSelectedTypes] = useState(
+    query.get("subCategory") ? [query.get("subCategory")] : []
+  );
   const [sortOption, setSortOption] = useState("default");
-  const [filteredProducts, setFilteredProducts] = useState(products);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const category = params.get("category");
-    const subCategory = params.get("subCategory");
-
-    if (category) setSelectedCategories([category]);
-    if (subCategory) setSelectedTypes([subCategory]);
-  }, [location.search]);
-
-  useEffect(() => {
-    const handler = setTimeout(() => setDebouncedSearch(searchTerm), 300);
-    return () => clearTimeout(handler);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    let updatedProducts = products.filter((p) => {
-      const matchSearch = p.name
-        .toLowerCase()
-        .includes(debouncedSearch.toLowerCase());
-      const matchCategory =
-        selectedCategories.length === 0 ||
-        selectedCategories.includes(p.category);
-      const matchType =
-        selectedTypes.length === 0 || selectedTypes.includes(p.subCategory);
-      return matchSearch && matchCategory && matchType;
-    });
-
-    if (sortOption === "low-high")
-      updatedProducts.sort((a, b) => a.price - b.price);
-    else if (sortOption === "high-low")
-      updatedProducts.sort((a, b) => b.price - a.price);
-    else if (sortOption === "newest")
-      updatedProducts.sort((a, b) => b.date - a.date);
-
-    setFilteredProducts(updatedProducts);
-  }, [
-    debouncedSearch,
-    selectedCategories,
-    selectedTypes,
-    sortOption,
-    products,
-  ]);
+  const [showFilters, setShowFilters] = useState(false);
 
   const handleCategoryChange = (category) =>
     setSelectedCategories((prev) =>
@@ -71,14 +36,52 @@ const Collection = () => {
 
   const handleAddToCart = (product) => {
     addToCart(product);
-    navigate("/cart"); // ✅ redirect to cart page
+    toast.success(`${product.name} added to cart`, {
+      position: "top-right",
+      autoClose: 2000,
+    });
   };
+
+  const handleClearFilters = () => {
+    setSelectedCategories([]);
+    setSelectedTypes([]);
+    setSearchTerm("");
+    setSortOption("default");
+  };
+
+  // Filter & Sort
+  const filteredProducts = useMemo(() => {
+    let updated = allProducts.filter((product) => {
+      const matchSearch = product.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
+      const matchCategory =
+        selectedCategories.length === 0 ||
+        selectedCategories.includes(product.category);
+      const matchType =
+        selectedTypes.length === 0 ||
+        selectedTypes.includes(product.subCategory);
+      return matchSearch && matchCategory && matchType;
+    });
+
+    if (sortOption === "low-high") updated.sort((a, b) => a.price - b.price);
+    else if (sortOption === "high-low")
+      updated.sort((a, b) => b.price - a.price);
+    else if (sortOption === "newest") updated.sort((a, b) => b.date - a.date);
+
+    return updated;
+  }, [searchTerm, selectedCategories, selectedTypes, sortOption]);
 
   return (
     <div className="flex flex-col sm:flex-row gap-6 pt-6 px-4 sm:px-8 border-t">
-      {/* Sidebar */}
-      <div className="sm:w-64 flex flex-col gap-6">
-        <div className="bg-gray-50 rounded-xl border p-4">
+      {/* Sidebar / Filters */}
+      <aside
+        className={`sm:w-64 flex flex-col gap-6 transition-all duration-300 ${
+          showFilters ? "block" : "hidden sm:block"
+        }`}
+      >
+        {/* Category Filter */}
+        <div className="bg-gray-50 rounded-xl border p-4 shadow-sm">
           <p className="mb-2 text-sm font-semibold text-gray-700">CATEGORIES</p>
           {["Men", "Women", "Kids"].map((cat) => (
             <label key={cat} className="flex items-center gap-2 cursor-pointer">
@@ -93,7 +96,8 @@ const Collection = () => {
           ))}
         </div>
 
-        <div className="bg-gray-50 rounded-xl border p-4">
+        {/* Type Filter */}
+        <div className="bg-gray-50 rounded-xl border p-4 shadow-sm">
           <p className="mb-2 text-sm font-semibold text-gray-700">TYPE</p>
           {["Topwear", "Bottomwear", "Winterwear"].map((type) => (
             <label
@@ -111,21 +115,26 @@ const Collection = () => {
           ))}
         </div>
 
+        {/* Clear Filters */}
         <button
-          onClick={() => {
-            setSelectedCategories([]);
-            setSelectedTypes([]);
-            setSearchTerm("");
-          }}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          onClick={handleClearFilters}
+          className="mt-5 px-4 py-2 bg-white border border-purple-600 text-purple-600 rounded-lg font-semibold hover:bg-purple-600 hover:text-white transition"
         >
-          Clear Filters
+          Clear All Filters
         </button>
-      </div>
+      </aside>
 
       {/* Products Grid */}
-      <div className="flex-1 flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0">
+      <main className="flex-1 flex flex-col gap-6">
+        {/* Search & Sort */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-4">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="sm:hidden px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          >
+            {showFilters ? "Hide Filters" : "Show Filters"}
+          </button>
+
           <input
             type="text"
             placeholder="Search products..."
@@ -133,6 +142,7 @@ const Collection = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full sm:w-64 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 text-sm"
           />
+
           <select
             value={sortOption}
             onChange={(e) => setSortOption(e.target.value)}
@@ -145,6 +155,7 @@ const Collection = () => {
           </select>
         </div>
 
+        {/* Products */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
           {filteredProducts.length > 0 ? (
             filteredProducts.map((product) => (
@@ -162,9 +173,9 @@ const Collection = () => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleAddToCart(product); // ✅ navigate after adding
+                      handleAddToCart(product);
                     }}
-                    className="absolute bottom-2 right-2 px-3 py-1 text-xs sm:text-sm bg-purple-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition"
+                    className="absolute bottom-2 right-2 px-3 py-1 text-xs sm:text-sm bg-purple-600 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300"
                   >
                     Add to Cart
                   </button>
@@ -174,7 +185,8 @@ const Collection = () => {
                     {product.name}
                   </p>
                   <p className="text-gray-600 text-xs sm:text-sm mt-1">
-                    {product.price}৳
+                    {currency}
+                    {product.price.toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -185,7 +197,7 @@ const Collection = () => {
             </p>
           )}
         </div>
-      </div>
+      </main>
     </div>
   );
 };
