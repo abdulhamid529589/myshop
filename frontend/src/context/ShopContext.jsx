@@ -13,12 +13,12 @@ const ShopContextProvider = ({ children }) => {
   const currency = "৳";
   const delivery_fee = 150;
 
-  // Save orders in localStorage
+  // Persist orders in localStorage
   useEffect(() => {
     localStorage.setItem("orders", JSON.stringify(orders));
   }, [orders]);
 
-  // Add to cart
+  // Add product to cart
   const addToCart = (product) => {
     setCartItems((prev) => {
       const exist = prev.find((item) => item._id === product._id);
@@ -33,12 +33,23 @@ const ShopContextProvider = ({ children }) => {
     });
   };
 
-  // Remove from cart
+  // Update quantity of a cart item
+  const updateCartItemQuantity = (productId, newQuantity) => {
+    setCartItems((prev) =>
+      prev.map((item) =>
+        item._id === productId
+          ? { ...item, quantity: newQuantity < 1 ? 1 : newQuantity } // ensure minimum 1
+          : item
+      )
+    );
+  };
+
+  // Remove item from cart
   const removeFromCart = (productId) => {
     setCartItems((prev) => prev.filter((item) => item._id !== productId));
   };
 
-  // Clear cart
+  // Clear entire cart
   const clearCart = () => setCartItems([]);
 
   // Place order
@@ -54,7 +65,16 @@ const ShopContextProvider = ({ children }) => {
     clearCart();
   };
 
-  // Totals
+  // Remove order
+  const removeOrder = (orderId) => {
+    setOrders((prev) => {
+      const updated = prev.filter((order) => order.id !== orderId);
+      localStorage.setItem("orders", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Calculate totals
   const subtotal = cartItems.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0
@@ -68,9 +88,11 @@ const ShopContextProvider = ({ children }) => {
         cartItems,
         orders,
         addToCart,
+        updateCartItemQuantity,
         removeFromCart,
         clearCart,
         addOrder,
+        removeOrder,
         currency,
         delivery_fee,
         subtotal,

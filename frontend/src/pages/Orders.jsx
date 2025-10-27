@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { ShopContext } from "../context/ShopContext";
 
 const Orders = () => {
-  const { orders, currency } = useContext(ShopContext);
+  const { orders, currency, removeOrder } = useContext(ShopContext);
 
   if (orders.length === 0) {
     return (
@@ -18,12 +18,17 @@ const Orders = () => {
       <h1 className="text-2xl sm:text-3xl font-bold mb-6">My Orders</h1>
       <div className="space-y-6">
         {orders.map((order) => (
-          <div key={order.id} className="border rounded-xl p-4 shadow bg-white">
+          <div
+            key={order.id}
+            className="border rounded-xl p-4 shadow-md bg-white hover:shadow-lg transition-shadow duration-300"
+          >
+            {/* Order header */}
             <div className="flex flex-col sm:flex-row justify-between mb-4 text-sm text-gray-600">
               <span>Order ID: {order.id}</span>
               <span>{order.date}</span>
             </div>
 
+            {/* Order items */}
             {order.items.map((item) => (
               <div
                 key={item._id}
@@ -39,6 +44,7 @@ const Orders = () => {
               </div>
             ))}
 
+            {/* Order total */}
             <div className="flex justify-between font-bold mt-4">
               <span>Total:</span>
               <span>
@@ -47,15 +53,26 @@ const Orders = () => {
               </span>
             </div>
 
-            <div className="mt-3 text-sm">
-              <p>
-                Payment:{" "}
-                <span className="font-medium">{order.paymentStatus}</span>
-              </p>
-              <p>
-                Status:{" "}
-                <span className="font-medium">{order.deliveryStatus}</span>
-              </p>
+            {/* Payment and status */}
+            <div className="mt-3 text-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+              <div>
+                <p>
+                  Payment:{" "}
+                  <span className="font-medium">{order.paymentStatus}</span>
+                </p>
+                <p>
+                  Status:{" "}
+                  <span className="font-medium">{order.deliveryStatus}</span>
+                </p>
+              </div>
+
+              {/* Remove order button */}
+              <button
+                onClick={() => removeOrder(order.id)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700 transition"
+              >
+                Remove
+              </button>
             </div>
           </div>
         ))}

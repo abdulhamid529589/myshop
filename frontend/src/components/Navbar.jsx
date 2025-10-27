@@ -26,8 +26,8 @@ const Navbar = () => {
   ];
 
   const profileItems = [
-    { name: "My Profile", path: "/profile" },
-    { name: "Orders", path: "/orders" }, // ✅ will navigate to Orders page
+    { name: "My Profile", path: "/login" }, // navigate to login
+    { name: "Orders", path: "/orders" },
     { name: "Logout", path: "/logout" },
   ];
 
@@ -48,10 +48,10 @@ const Navbar = () => {
     setSearchTerm(value);
 
     if (value.length > 0) {
-      const filtered = products.filter((p) =>
-        p.name.toLowerCase().includes(value.toLowerCase())
+      const filtered = products.filter((product) =>
+        product.name.toLowerCase().includes(value.toLowerCase())
       );
-      setSuggestions(filtered.slice(0, 10));
+      setSuggestions(filtered.slice(0, 5));
     } else {
       setSuggestions([]);
     }
@@ -95,6 +95,7 @@ const Navbar = () => {
 
   const renderProfile = () => (
     <div className="relative" ref={profileRef}>
+      {/* Profile Icon: only toggles dropdown */}
       <button
         aria-haspopup="menu"
         aria-expanded={profileOpen}
@@ -108,6 +109,7 @@ const Navbar = () => {
         />
       </button>
 
+      {/* Dropdown Menu */}
       {profileOpen && (
         <ul className="absolute right-0 mt-2 w-40 py-2 bg-white rounded-xl shadow-lg border z-50">
           {profileItems.map((item) => (
